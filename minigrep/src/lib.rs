@@ -20,25 +20,19 @@ pub fn run(config: &Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut res = Vec::new();
-    // let split = contents.split("\n");
-    for line in contents.lines() {
-        if line.contains(query) {
-            res.push(line);
-        }
-    }
-    res
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut res = Vec::new();
     let query_lower_case = query.to_ascii_lowercase();
-    for line in contents.lines() {
-        if line.to_ascii_lowercase().contains(&query_lower_case) {
-            res.push(line);
-        }
-    }
-    res
+
+    contents
+        .lines()
+        .filter(|line| line.contains(&query_lower_case))
+        .collect()
 }
 
 pub struct Config {
@@ -48,14 +42,26 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &str> {
+    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err("Not enough arguments");
         }
 
+        args.next();
+
+        let query = match args.next() {
+            Some(q) => q,
+            None => return Err("Didn't get a query string"),
+        };
+
+        let filename = match args.next() {
+            Some(f) => f,
+            None => return Err("Didn't get a file name"),
+        };
+
         Ok(Self {
-            query: args[1].clone(), 
-            filename: args[2].clone(),
+            query: query, 
+            filename: filename,
             case_sensitive: env::var("CASE_INSENSITIVE").is_err(),
         })
     }
